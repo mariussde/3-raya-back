@@ -44,11 +44,11 @@ export class GameController {
         throw new BadRequestException('Invalid status value');
       }
 
-      const parsedLimit = limit || 10;
-      if (parsedLimit < 1 || parsedLimit > 50) {
+      if (limit !== undefined && (limit < 1 || limit > 50)) {
         throw new BadRequestException('Limit must be between 1 and 50');
       }
 
+      const parsedLimit = limit || 10;
       return await this.gameService.getGameHistory(parsedLimit, status);
     } catch (error) {
       if (error instanceof BadRequestException) {
