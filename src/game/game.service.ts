@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Game, GameDocument } from './game.schema';
@@ -30,7 +34,9 @@ export class GameService {
 
   async findById(id: string): Promise<GameDocument> {
     const game = await this.gameModel.findById(id).exec();
-    if (!game) throw new Error('Game not found');
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
     return game;
   }
 
@@ -40,14 +46,28 @@ export class GameService {
     col: number,
   ): Promise<GameDocument> {
     const game = await this.findById(gameId);
-    if (!game) throw new Error('Game not found');
 
-    if (game.status !== 'IN_PROGRESS')
-      throw new Error('Game is already finished');
+    // Validate game state
+    if (game.status !== 'IN_PROGRESS') {
+      throw new BadRequestException('Game is already finished');
+    }
 
-    if (game.board[row][col] !== '')
-      throw new Error('Cell is already occupied');
+    // Validate board boundaries
+    if (row < 0 || row > 2 || col < 0 || col > 2) {
+      throw new BadRequestException('Invalid move: Position out of bounds');
+    }
 
+    // Validate cell is empty
+    if (game.board[row][col] !== '') {
+      throw new BadRequestException('Invalid move: Cell is already occupied');
+    }
+
+    // Validate board integrity
+    if (!this.isValidBoard(game.board)) {
+      throw new BadRequestException('Invalid game state: Corrupted board');
+    }
+
+    // Make the move
     game.board[row][col] = game.currentPlayer;
 
     // Check for win or draw
@@ -63,17 +83,35 @@ export class GameService {
 
   async makeAIMove(gameId: string): Promise<GameDocument> {
     const game = await this.findById(gameId);
-    if (!game) throw new Error('Game not found');
-    if (game.status !== 'IN_PROGRESS')
-      throw new Error('Game is already finished');
-    if (game.currentPlayer !== 'O') throw new Error("Not AI's turn");
+    if (game.status !== 'IN_PROGRESS') {
+      throw new BadRequestException('Game is already finished');
+    }
+    if (game.currentPlayer !== 'O') {
+      throw new BadRequestException("Not AI's turn");
+    }
+
+    if (!this.isValidBoard(game.board)) {
+      throw new BadRequestException('Invalid game state: Corrupted board');
+    }
 
     const move = this.calculateAIMove(game.board);
     return this.makeMove(gameId, move.row, move.col);
   }
 
+  private isValidBoard(board: string[][]): boolean {
+    // Check board dimensions
+    if (board.length !== 3 || !board.every((row) => row.length === 3)) {
+      return false;
+    }
+
+    // Check valid symbols
+    const validSymbols = ['', 'X', 'O'];
+    return board.every((row) =>
+      row.every((cell) => validSymbols.includes(cell)),
+    );
+  }
+
   private calculateAIMove(board: string[][]): { row: number; col: number } {
-    // Simple AI: Look for winning move, then blocking move, then center, then random
     const emptyCells: { row: number; col: number }[] = [];
 
     // Collect empty cells
@@ -83,6 +121,10 @@ export class GameService {
           emptyCells.push({ row: i, col: j });
         }
       }
+    }
+
+    if (emptyCells.length === 0) {
+      throw new BadRequestException('No valid moves available');
     }
 
     // Try center if available

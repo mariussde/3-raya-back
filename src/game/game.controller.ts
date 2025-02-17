@@ -7,8 +7,13 @@ import {
   HttpException,
   HttpStatus,
   Query,
+  ValidationPipe,
+  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { GameService } from './game.service';
+import { MoveDto } from './dto/move.dto';
+import { Types } from 'mongoose';
 
 @Controller('game')
 export class GameController {
@@ -28,13 +33,27 @@ export class GameController {
 
   @Get('history')
   async getGameHistory(
-    @Query('limit') limit?: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('status') status?: string,
   ) {
     try {
-      const parsedLimit = limit ? parseInt(limit, 10) : 10;
+      if (
+        status &&
+        !['IN_PROGRESS', 'X_WON', 'O_WON', 'DRAW'].includes(status)
+      ) {
+        throw new BadRequestException('Invalid status value');
+      }
+
+      const parsedLimit = limit || 10;
+      if (parsedLimit < 1 || parsedLimit > 50) {
+        throw new BadRequestException('Limit must be between 1 and 50');
+      }
+
       return await this.gameService.getGameHistory(parsedLimit, status);
-    } catch {
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new HttpException(
         'Failed to fetch game history',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -57,12 +76,22 @@ export class GameController {
   @Get(':id')
   async getGame(@Param('id') id: string) {
     try {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('Invalid game ID format');
+      }
+
       const game = await this.gameService.findById(id);
       if (!game) {
         throw new HttpException('Game not found', HttpStatus.NOT_FOUND);
       }
       return game;
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof HttpException
+      ) {
+        throw error;
+      }
       throw new HttpException(
         'Failed to get game',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -73,9 +102,13 @@ export class GameController {
   @Post(':id/move')
   async makeMove(
     @Param('id') id: string,
-    @Body() moveData: { row: number; col: number },
+    @Body(new ValidationPipe({ transform: true })) moveData: MoveDto,
   ) {
     try {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('Invalid game ID format');
+      }
+
       const game = await this.gameService.makeMove(
         id,
         moveData.row,
@@ -85,7 +118,10 @@ export class GameController {
         return await this.gameService.makeAIMove(id);
       }
       return game;
-    } catch (error: unknown) {
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       const message =
         error instanceof Error ? error.message : 'Failed to make move';
       throw new HttpException(message, HttpStatus.BAD_REQUEST);
