@@ -4,29 +4,24 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: ['https://3-raya-front-one.vercel.app'],
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      credentials: true,
-      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-      exposedHeaders: ['Access-Control-Allow-Origin'],
-    },
-  });
-  
+  const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // Additional security headers middleware
+  // Enable CORS
+  app.enableCors({
+    origin: 'https://3-raya-front-one.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+  });
+
+  // Handle preflight requests
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://3-raya-front-one.vercel.app');
-    res.header('Access-Control-Allow-Credentials', 'true');
     if (req.method === 'OPTIONS') {
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-      res.status(204).send();
-    } else {
-      next();
+      res.status(204).end();
+      return;
     }
+    next();
   });
 
   // Swagger configuration
