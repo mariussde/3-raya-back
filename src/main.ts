@@ -9,7 +9,7 @@ async function bootstrap() {
 
   // Configure CORS
   app.enableCors({
-    origin: true, // Allow all origins
+    origin: 'https://3-raya-front-one.vercel.app', // Allow specific origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders: [
