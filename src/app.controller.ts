@@ -34,7 +34,7 @@ export class AppController {
       <body>
         <h1>Welcome to the 3 Raya API</h1>
         <p>This API allows you to manage and play the Tic Tac Toe game.</p>
-        <p>Check the documentation at <a href="/api">/api</a> for more details.</p>
+        <p>Check the documentation for more details.</p>
       </body>
       </html>
     `);
