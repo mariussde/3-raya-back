@@ -11,6 +11,23 @@ export class GameService {
     const newGame = new this.gameModel();
     return newGame.save();
   }
+
+  async findAll(): Promise<GameDocument[]> {
+    return this.gameModel.find().sort({ createdAt: -1 }).exec();
+  }
+
+  async getGameHistory(
+    limit: number = 10,
+    status?: string,
+  ): Promise<GameDocument[]> {
+    const query = status ? { status } : {};
+    return this.gameModel
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
+  }
+
   async findById(id: string): Promise<GameDocument> {
     const game = await this.gameModel.findById(id).exec();
     if (!game) throw new Error('Game not found');

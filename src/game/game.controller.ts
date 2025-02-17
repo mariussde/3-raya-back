@@ -6,12 +6,41 @@ import {
   Param,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { GameService } from './game.service';
 
 @Controller('game')
 export class GameController {
   constructor(private readonly gameService: GameService) {}
+
+  @Get()
+  async getAllGames() {
+    try {
+      return await this.gameService.findAll();
+    } catch {
+      throw new HttpException(
+        'Failed to fetch games',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('history')
+  async getGameHistory(
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    try {
+      const parsedLimit = limit ? parseInt(limit, 10) : 10;
+      return await this.gameService.getGameHistory(parsedLimit, status);
+    } catch {
+      throw new HttpException(
+        'Failed to fetch game history',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   @Post()
   async createGame() {
