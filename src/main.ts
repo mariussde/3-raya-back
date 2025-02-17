@@ -4,33 +4,41 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: ['https://3-raya-front-one.vercel.app'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      credentials: true,
+      allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+      exposedHeaders: ['Access-Control-Allow-Origin'],
+    },
+  });
+  
   const configService = app.get(ConfigService);
 
-  // Configure CORS
-  app.enableCors({
-    origin: 'https://3-raya-front-one.vercel.app', // Allow specific origin
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Authorization',
-    ],
+  // Additional security headers middleware
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://3-raya-front-one.vercel.app');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    if (req.method === 'OPTIONS') {
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');
+      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.status(204).send();
+    } else {
+      next();
+    }
   });
 
-  // Configure Swagger
+  // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Tic Tac Toe API')
     .setDescription('The Tic Tac Toe game API')
     .setVersion('1.0')
+    .addBearerAuth()  // Add this if you're using JWT
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  // Start the server
   const port = configService.get<number>('PORT') || 3001;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
