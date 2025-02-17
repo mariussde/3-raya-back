@@ -9,7 +9,7 @@ async function bootstrap() {
 
   // Configure CORS
   app.enableCors({
-    origin: configService.get('FRONTEND_URL'),
+    origin: configService.get<string>('FRONTEND_URL'),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -24,9 +24,12 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   // Start the server
-  const port = configService.get('PORT') || 3001;
+  const port = configService.get<number>('PORT') || 3001;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+  process.exit(1);
+});
