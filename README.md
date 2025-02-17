@@ -25,11 +25,10 @@ npm install
 
 ## Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
+Modify the variables with your values, mainly the MONGODB_URI:
 
-```env
-MONGODB_URI=your_mongodb_connection_string
-PORT=3001
+```bash
+cp .env.example .env.local
 ```
 
 ## Running the Application
