@@ -12,8 +12,15 @@ export class GameService {
   constructor(@InjectModel(Game.name) private gameModel: Model<GameDocument>) {}
 
   async create(): Promise<GameDocument> {
-    const newGame = new this.gameModel();
-    return newGame.save();
+    return this.gameModel.create({
+      board: [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', ''],
+      ],
+      currentPlayer: 'X',
+      status: 'IN_PROGRESS',
+    });
   }
 
   async findAll(): Promise<GameDocument[]> {
