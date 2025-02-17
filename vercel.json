@@ -20,7 +20,13 @@
           "HEAD",
           "CONNECT",
           "TRACE"
-        ]
+        ],
+        "headers": {
+          "Access-Control-Allow-Origin": "https://3-raya-front-git-master-marius-projects-3d7b229a.vercel.app",
+          "Access-Control-Allow-Methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+          "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+          "Access-Control-Allow-Credentials": "true"
+        }
       }
     ]
   }
